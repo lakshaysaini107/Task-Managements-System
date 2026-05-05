@@ -1,0 +1,75 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id              Int               @id @default(autoincrement())
+  name            String
+  email           String            @unique
+  password        String
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  
+  // Relations
+  adminProjects   Project[]         @relation("AdminProjects")
+  projectMembers  ProjectMember[]
+  assignedTasks   Task[]            @relation("AssignedTasks")
+}
+
+model Project {
+  id              Int               @id @default(autoincrement())
+  name            String
+  description     String?
+  admin_id        Int
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  
+  // Relations
+  admin           User              @relation("AdminProjects", fields: [admin_id], references: [id], onDelete: Cascade)
+  members         ProjectMember[]
+  tasks           Task[]
+  
+  @@index([admin_id])
+}
+
+model ProjectMember {
+  id              Int               @id @default(autoincrement())
+  user_id         Int
+  project_id      Int
+  createdAt       DateTime          @default(now())
+  
+  // Relations
+  user            User              @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  project         Project           @relation(fields: [project_id], references: [id], onDelete: Cascade)
+  
+  @@unique([user_id, project_id])
+  @@index([project_id])
+}
+
+model Task {
+  id              Int               @id @default(autoincrement())
+  title           String
+  description     String?
+  dueDate         DateTime?
+  priority        String            @default("Medium")
+  status          String            @default("To Do")
+  assignedTo      Int?
+  projectId       Int
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  
+  // Relations
+  assignee        User?             @relation("AssignedTasks", fields: [assignedTo], references: [id], onDelete: SetNull)
+  project         Project           @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  
+  @@index([projectId])
+  @@index([assignedTo])
+}

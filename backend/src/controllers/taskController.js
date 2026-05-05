@@ -1,4 +1,5 @@
 import { prisma } from "../app.js";
+import { ROLES, canManageProject } from "../utils/roles.js";
 
 export const createTask = async (req, res) => {
   try {
@@ -18,7 +19,7 @@ export const createTask = async (req, res) => {
       return res.status(404).json({ message: "Project not found" });
     }
 
-    if (project.admin_id !== userId) {
+    if (!canManageProject(req.user, project)) {
       return res.status(403).json({ message: "Only admin can create tasks" });
     }
 
@@ -83,13 +84,13 @@ export const getTasksByProject = async (req, res) => {
       },
     });
 
-    if (!member) {
+    if (req.user.role !== ROLES.ADMIN && !member) {
       return res.status(403).json({ message: "You are not a member of this project" });
     }
 
     const tasks = await prisma.task.findMany({
       where: { projectId: parseInt(projectId) },
-      include: { assignee: { select: { id: true, name: true, email: true } } },
+      include: { assignee: { select: { id: true, name: true, email: true, role: true } } },
       orderBy: { createdAt: "desc" },
     });
 
@@ -114,7 +115,7 @@ export const updateTask = async (req, res) => {
       return res.status(404).json({ message: "Task not found" });
     }
 
-    const isAdmin = task.project.admin_id === userId;
+    const isAdmin = canManageProject(req.user, task.project);
     const isAssignee = task.assignedTo === userId;
 
     // Members can only update status of their assigned tasks
@@ -182,7 +183,7 @@ export const deleteTask = async (req, res) => {
       return res.status(404).json({ message: "Task not found" });
     }
 
-    if (task.project.admin_id !== userId) {
+    if (!canManageProject(req.user, task.project)) {
       return res.status(403).json({ message: "Only admin can delete tasks" });
     }
 

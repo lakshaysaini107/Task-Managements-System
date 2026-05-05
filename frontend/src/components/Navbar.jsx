@@ -19,6 +19,7 @@ const Navbar = () => {
           <div style={styles.nav}>
             <Link to="/dashboard" style={styles.link}>Dashboard</Link>
             <Link to="/projects" style={styles.link}>Projects</Link>
+            <span style={styles.role}>{user.role}</span>
             <span style={styles.user}>{user.name}</span>
             <button onClick={handleLogout} style={styles.button}>Logout</button>
           </div>
@@ -65,6 +66,14 @@ const styles = {
   user: {
     fontSize: '0.9rem',
       color: '#ecf0f1',
+  },
+  role: {
+    padding: '0.25rem 0.5rem',
+    backgroundColor: '#f39c12',
+    color: 'white',
+    borderRadius: '999px',
+    fontSize: '0.75rem',
+    fontWeight: 'bold',
   },
   button: {
     padding: '0.5rem 1rem',

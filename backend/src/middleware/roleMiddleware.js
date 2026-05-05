@@ -1,4 +1,13 @@
 import { prisma } from "../app.js";
+import { canManageProject } from "../utils/roles.js";
+
+export const requireRole = (...allowedRoles) => (req, res, next) => {
+  if (!allowedRoles.includes(req.user.role)) {
+    return res.status(403).json({ message: "You do not have permission to perform this action" });
+  }
+
+  next();
+};
 
 export const isProjectAdmin = async (req, res, next) => {
   try {
@@ -13,7 +22,7 @@ export const isProjectAdmin = async (req, res, next) => {
       return res.status(404).json({ message: "Project not found" });
     }
 
-    if (project.admin_id !== userId) {
+    if (!canManageProject(req.user, project)) {
       return res.status(403).json({ message: "Only admin can perform this action" });
     }
 

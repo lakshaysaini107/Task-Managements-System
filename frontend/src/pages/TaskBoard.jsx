@@ -42,7 +42,7 @@ const TaskBoard = () => {
     }
   };
 
-  const isAdmin = project?.admin_id === user?.id;
+  const isAdmin = user?.role === 'ADMIN' || project?.admin_id === user?.id;
 
   const handleCreateTask = async (e) => {
     e.preventDefault();

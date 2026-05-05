@@ -1,4 +1,5 @@
 import { prisma } from "../app.js";
+import { ROLES, canCreateProject, canManageProject } from "../utils/roles.js";
 
 export const createProject = async (req, res) => {
   try {
@@ -7,6 +8,10 @@ export const createProject = async (req, res) => {
 
     if (!name) {
       return res.status(400).json({ message: "Project name is required" });
+    }
+
+    if (!canCreateProject(req.user.role)) {
+      return res.status(403).json({ message: "Only admins and managers can create projects" });
     }
 
     const project = await prisma.project.create({
@@ -39,16 +44,19 @@ export const getAllProjects = async (req, res) => {
     const userId = req.user.id;
 
     const projects = await prisma.project.findMany({
-      where: {
-        members: {
-          some: {
-            user_id: userId,
-          },
-        },
-      },
+      where:
+        req.user.role === ROLES.ADMIN
+          ? {}
+          : {
+              members: {
+                some: {
+                  user_id: userId,
+                },
+              },
+            },
       include: {
-        admin: { select: { id: true, name: true, email: true } },
-        members: { include: { user: { select: { id: true, name: true, email: true } } } },
+        admin: { select: { id: true, name: true, email: true, role: true } },
+        members: { include: { user: { select: { id: true, name: true, email: true, role: true } } } },
         tasks: true,
       },
     });
@@ -67,9 +75,9 @@ export const getProjectById = async (req, res) => {
     const project = await prisma.project.findUnique({
       where: { id: parseInt(id) },
       include: {
-        admin: { select: { id: true, name: true, email: true } },
-        members: { include: { user: { select: { id: true, name: true, email: true } } } },
-        tasks: { include: { assignee: { select: { id: true, name: true, email: true } } } },
+        admin: { select: { id: true, name: true, email: true, role: true } },
+        members: { include: { user: { select: { id: true, name: true, email: true, role: true } } } },
+        tasks: { include: { assignee: { select: { id: true, name: true, email: true, role: true } } } },
       },
     });
 
@@ -79,7 +87,7 @@ export const getProjectById = async (req, res) => {
 
     // Check if user is a member
     const isMember = project.members.some((m) => m.user_id === userId);
-    if (!isMember) {
+    if (req.user.role !== ROLES.ADMIN && !isMember) {
       return res.status(403).json({ message: "You are not a member of this project" });
     }
 
@@ -93,7 +101,6 @@ export const addMember = async (req, res) => {
   try {
     const { id: projectId } = req.params;
     const { userId, email } = req.body;
-    const adminId = req.user.id;
 
     if (!userId && !email) {
       return res.status(400).json({ message: "User ID or email is required" });
@@ -107,7 +114,7 @@ export const addMember = async (req, res) => {
       return res.status(404).json({ message: "Project not found" });
     }
 
-    if (project.admin_id !== adminId) {
+    if (!canManageProject(req.user, project)) {
       return res.status(403).json({ message: "Only admin can add members" });
     }
 
@@ -137,7 +144,7 @@ export const addMember = async (req, res) => {
         user_id: user.id,
         project_id: parseInt(projectId),
       },
-      include: { user: { select: { id: true, name: true, email: true } } },
+      include: { user: { select: { id: true, name: true, email: true, role: true } } },
     });
 
     res.status(201).json({
@@ -152,8 +159,6 @@ export const addMember = async (req, res) => {
 export const removeMember = async (req, res) => {
   try {
     const { id: projectId, userId } = req.params;
-    const adminId = req.user.id;
-
     const project = await prisma.project.findUnique({
       where: { id: parseInt(projectId) },
     });
@@ -162,7 +167,7 @@ export const removeMember = async (req, res) => {
       return res.status(404).json({ message: "Project not found" });
     }
 
-    if (project.admin_id !== adminId) {
+    if (!canManageProject(req.user, project)) {
       return res.status(403).json({ message: "Only admin can remove members" });
     }
 

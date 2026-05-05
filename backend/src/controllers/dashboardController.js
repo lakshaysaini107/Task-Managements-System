@@ -1,4 +1,5 @@
 import { prisma } from "../app.js";
+import { ROLES } from "../utils/roles.js";
 
 export const getDashboard = async (req, res) => {
   try {
@@ -6,11 +7,14 @@ export const getDashboard = async (req, res) => {
 
     // Get all projects the user is a member of
     const projects = await prisma.project.findMany({
-      where: {
-        members: {
-          some: { user_id: userId },
-        },
-      },
+      where:
+        req.user.role === ROLES.ADMIN
+          ? {}
+          : {
+              members: {
+                some: { user_id: userId },
+              },
+            },
       select: { id: true },
     });
 

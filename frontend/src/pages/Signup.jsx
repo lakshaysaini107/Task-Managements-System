@@ -7,6 +7,7 @@ const Signup = () => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [role, setRole] = useState('MEMBER');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
@@ -18,7 +19,7 @@ const Signup = () => {
     setLoading(true);
 
     try {
-      const { data } = await api.post('/auth/signup', { name, email, password });
+      const { data } = await api.post('/auth/signup', { name, email, password, role });
       signup(data.user, data.token);
       navigate('/dashboard');
     } catch (err) {
@@ -58,6 +59,16 @@ const Signup = () => {
             style={styles.input}
             required
           />
+          <select
+            value={role}
+            onChange={(e) => setRole(e.target.value)}
+            style={styles.input}
+          >
+            <option value="MEMBER">Member - update assigned tasks</option>
+            <option value="MANAGER">Manager - create and manage own projects</option>
+            <option value="ADMIN">Admin - manage all projects</option>
+          </select>
+          <p style={styles.hint}>The first account is always created as Admin.</p>
           <button type="submit" style={styles.button} disabled={loading}>
             {loading ? 'Signing up...' : 'Sign Up'}
           </button>
@@ -128,6 +139,12 @@ const styles = {
   link: {
     color: '#27ae60',
     textDecoration: 'none',
+  },
+  hint: {
+    marginTop: '-0.5rem',
+    marginBottom: '1rem',
+    color: '#7f8c8d',
+    fontSize: '0.8rem',
   },
 };
 

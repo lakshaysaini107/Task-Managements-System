@@ -17,6 +17,7 @@ db.run(`
     name TEXT NOT NULL,
     email TEXT NOT NULL UNIQUE,
     password TEXT NOT NULL,
+    role TEXT NOT NULL DEFAULT 'MEMBER',
     createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updatedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
   );
@@ -72,6 +73,12 @@ db.run(`
   CREATE INDEX IF NOT EXISTS Task_projectId_idx ON Task(projectId);
   CREATE INDEX IF NOT EXISTS Task_assignedTo_idx ON Task(assignedTo);
 `);
+
+const userColumns = db.exec("PRAGMA table_info(User);");
+const hasRoleColumn = userColumns[0]?.values.some((column) => column[1] === "role");
+if (!hasRoleColumn) {
+  db.run("ALTER TABLE User ADD COLUMN role TEXT NOT NULL DEFAULT 'MEMBER';");
+}
 
 fs.writeFileSync(dbPath, Buffer.from(db.export()));
 db.close();

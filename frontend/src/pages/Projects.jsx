@@ -12,6 +12,7 @@ const Projects = () => {
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [newProject, setNewProject] = useState({ name: '', description: '' });
   const navigate = useNavigate();
+  const canCreateProject = ['ADMIN', 'MANAGER'].includes(user?.role);
 
   useEffect(() => {
     fetchProjects();
@@ -46,17 +47,19 @@ const Projects = () => {
     <div style={styles.container}>
       <div style={styles.header}>
         <h1 style={styles.title}>Projects</h1>
-        <button
-          onClick={() => setShowCreateForm(!showCreateForm)}
-          style={styles.createButton}
-        >
-          {showCreateForm ? 'Cancel' : '+ New Project'}
-        </button>
+        {canCreateProject && (
+          <button
+            onClick={() => setShowCreateForm(!showCreateForm)}
+            style={styles.createButton}
+          >
+            {showCreateForm ? 'Cancel' : '+ New Project'}
+          </button>
+        )}
       </div>
 
       {error && <div style={styles.error}>{error}</div>}
 
-      {showCreateForm && (
+      {canCreateProject && showCreateForm && (
         <div style={styles.form}>
           <input
             type="text"
@@ -91,6 +94,7 @@ const Projects = () => {
       {projects.length === 0 && (
         <div style={styles.empty}>
           <p>No projects yet. Create one to get started!</p>
+          {!canCreateProject && <p>Ask an admin or manager to add you to a project.</p>}
         </div>
       )}
     </div>
